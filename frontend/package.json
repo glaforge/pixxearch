@@ -6,6 +6,7 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.1.0",
     "@google-cloud/firestore": "^4.11.0",
     "@google-cloud/storage": "^5.8.5",
     "dayjs": "^1.8.22",

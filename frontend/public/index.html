@@ -20,7 +20,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Pic-a-Daily Serverless Workshop</title>
+	<title>Pixxearch — Elasticsearch + Google Cloud Serverless</title>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
 	<link rel="stylesheet" href="style.css">
 	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
@@ -34,7 +34,7 @@
 			<div class="container">
 				<h1 class="title">
 					<i class="fas fa-image"></i> &nbsp;
-					Pic-a-Daily Serverless Workshop
+					Pixxearch — Elasticsearch + Google Cloud Serverless
 				</h1>
 			</div>
 		</div>
@@ -58,6 +58,20 @@
 
 	<section class="section">
 		<div class="container" id="app">
+			<div class="control has-icons-left has-icons-right">
+					<input class="input is-medium" type="text" 
+						v-on:keyup.enter="onSearchEnter"
+						v-model="query"
+						placeholder="Search tags">
+				<span class="icon is-large is-left">
+				  <i class="fas fa-tag"></i>
+				</span>
+				<span class="icon is-large is-right">
+				  <i class="fas fa-search"></i>
+				</span>
+			</div>
+			<br>
+			
 			<div class="columns" v-for="n in Math.ceil(pictures.length / 4)">
 				<div class="column is-one-quarter" v-for="pic in pictures.slice((n-1) * 4, n * 4)">
 					<div class="card">
@@ -68,10 +82,10 @@
 										<img :src="'/api/thumbnails/' + pic.name">
                                 </a>
 								</div>
-								<a class="panel-block" v-for="label in pic.labels">
+								<a class="panel-block" v-for="label in pic.labels" :href="'/?q=' + label">
 									<span class="panel-icon">
-                                    <i class="fas fa-bookmark"></i> &nbsp;
-                                </span>
+                                    	<i class="fas fa-bookmark"></i> &nbsp;
+                                	</span>
 									{{ label }}
 								</a>
 							</div>

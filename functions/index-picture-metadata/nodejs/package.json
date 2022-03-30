@@ -1,0 +1,7 @@
+{
+    "name": "index-picture-metadata",
+    "version": "0.0.1",
+    "dependencies": {
+      "node-fetch": "2.6.7"
+    }
+}

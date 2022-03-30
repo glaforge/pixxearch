@@ -19,8 +19,18 @@ const {Storage} = require('@google-cloud/storage');
 const storage = new Storage();
 const path = require('path');
 const dayjs = require('dayjs');
-const relativeTime = require('dayjs/plugin/relativeTime')
-dayjs.extend(relativeTime)
+const relativeTime = require('dayjs/plugin/relativeTime');
+dayjs.extend(relativeTime);
+
+const { Client } = require('@elastic/elasticsearch');
+const client = new Client({ 
+    cloud: {
+        id: process.env.ES_CLOUD_ID
+    },
+    auth: {
+        apiKey: process.env.ES_API_KEY
+    }
+});
 
 const app = express();
 app.use(express.static('public'));
@@ -28,7 +38,7 @@ app.use(fileUpload({
     limits: { fileSize: 10 * 1024 * 1024 },
     useTempFiles : true,
     tempFileDir : '/tmp/'
-}))
+}));
 
 app.post('/api/pictures', async (req, res) => {
     if (!req.files || Object.keys(req.files).length === 0) {
@@ -50,28 +60,59 @@ app.post('/api/pictures', async (req, res) => {
 
 app.get('/api/pictures', async (req, res) => {
     console.log('Retrieving list of pictures');
+    const pics = [];
 
-    const thumbnails = [];
-    const pictureStore = new Firestore().collection('pictures');
-    const snapshot = await pictureStore
-        .where('thumbnail', '==', true)
-        .orderBy('created', 'desc').get();
+    const query = req.query.q;
+    console.log(`Query string: ${query}`);
+    if (!!query) {
+        // search query available -> query from ElasticSearch
+        console.log(`Query requested: searching through ElasticSearch — query = ${query}`);
 
-    if (snapshot.empty) {
-        console.log('No pictures found');
-    } else {
-        snapshot.forEach(doc => {
-            const pic = doc.data();
-            thumbnails.push({
-                name: doc.id,
-                labels: pic.labels,
-                color: pic.color,
-                created: dayjs(pic.created.toDate()).fromNow()
+        try {
+            const result = await client.search({
+                query: {
+                    match: { labels: query }
+                }
+            })
+            console.log("Search result", result);
+
+            console.log(result.hits.hits);
+            result.hits.hits.forEach(hit => {
+                pics.push({
+                    name: hit._source.id,
+                    labels: hit._source.labels,
+                    color: hit._source.color,
+                    created: dayjs(hit._source.created).fromNow()
+                });
             });
-        });
+        } catch(e) {
+            console.log(e);
+            console.error(e);
+        }
+    } else {
+        // no search query -> return results from Firestore
+        console.log("No query: searching through Firestore");
+        const pictureStore = new Firestore().collection('pictures');
+        const snapshot = await pictureStore
+            .where('thumbnail', '==', true)
+            .orderBy('created', 'desc').get();
+    
+        if (snapshot.empty) {
+            console.log('No pictures found');
+        } else {
+            snapshot.forEach(doc => {
+                const pic = doc.data();
+                pics.push({
+                    name: doc.id,
+                    labels: pic.labels,
+                    color: pic.color,
+                    created: dayjs(pic.created.toDate()).fromNow()
+                });
+            });
+        }
     }
-    console.table(thumbnails);
-    res.send(thumbnails);
+
+    res.send(pics);
 });
 
 app.get('/api/pictures/:name', (req, res) => {

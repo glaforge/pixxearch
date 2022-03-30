@@ -15,11 +15,23 @@
 var app = new Vue({
   el: '#app',
   data() {
-    return { pictures: [] }
+    return { 
+      pictures: [],
+      query: undefined
+    }
   },
   mounted() {
+    this.query = new URLSearchParams(window.location.search).get('q');
+    const url = `/api/pictures${!!this.query ? `?q=${this.query}` : ''}`;
+    console.log("Search query URL", url);
     axios
-      .get('/api/pictures')
+      .get(url)
       .then(response => { this.pictures = response.data })
+      .catch(e => console.log("Error from Vue calling API:", e))
+  },
+  methods: {
+    "onSearchEnter": function() {
+      window.location = `?q=${encodeURIComponent(this.query)}`
+    }
   }
 })
