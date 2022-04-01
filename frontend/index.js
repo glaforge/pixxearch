@@ -70,6 +70,7 @@ app.get('/api/pictures', async (req, res) => {
 
         try {
             const result = await client.search({
+                index: 'pixxearch',
                 query: {
                     match: { labels: query }
                 }

@@ -47,6 +47,10 @@ main:
               - type: LABEL_DETECTION
               - type: SAFE_SEARCH_DETECTION
               - type: IMAGE_PROPERTIES
+              - type: TEXT_DETECTION
+              - type: FACE_DETECTION
+              - type: LANDMARK_DETECTION
+              - type: OBJECT_LOCALIZATION
         result: imageAnalysisResponse
     - transformImageAnalysisData:
         call: http.post
@@ -87,7 +91,7 @@ main:
             type: OIDC
           query:
             id: ${file}
-          body: ${imageMetadata.body}
+          body: ${imageAnalysisResponse.body}
         result: indexingResponse
     - thumbnailCall:
         call: http.post
