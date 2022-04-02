@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+process.on('uncaughtException', function (error) {
+  console.log(error.stack);
+});
+
 const { Client } = require('@elastic/elasticsearch');
 const client = new Client({ 
     cloud: {
@@ -24,16 +28,16 @@ const client = new Client({
 
 exports.indexPictureMetadata = async (req, res) => {
   const resp = req.body;
-  console.log("Indexing picture metadata", resp);
+  console.log("Indexing picture metadata", JSON.stringify(resp));
 
   const doc =  {
     id: req.query.id,
     safe: true,
     created: new Date().toISOString(),
     text: resp?.responses?.[0]?.fullTextAnnotation?.text,
-    colors: resp?.responses?.[0]?.imagePropertiesAnnotation?.dominantColors?.colors, 
-    labels: resp?.responses?.[0]?.labelAnnotations.map(lbl => lbl?.description),
-    objects:resp?.responses?.[0]?.localizedObjectAnnotations.map(obj => obj?.name),
+    colors: resp?.responses?.[0]?.imagePropertiesAnnotation?.dominantColors?.colors?.map(col => col?.color), 
+    labels: resp?.responses?.[0]?.labelAnnotations?.map(lbl => lbl?.description),
+    objects:resp?.responses?.[0]?.localizedObjectAnnotations?.map(obj => obj?.name),
     landmark: {
       name: resp?.responses?.[0]?.landmarkAnnotations?.[0]?.description,
       location: {
@@ -42,7 +46,9 @@ exports.indexPictureMetadata = async (req, res) => {
       }
     }
   };
-  console.log("Transformed doc", doc);
+  if (!doc?.landmark?.name || Object.keys(doc?.landmark?.location).length === 0) delete doc.landmark;
+    
+  console.log("Transformed doc", JSON.stringify(doc));
 
   try {
     const outcome = await client.index({
@@ -56,5 +62,6 @@ exports.indexPictureMetadata = async (req, res) => {
   } catch (e) {
     log.error(e);
     res.status(400).send({"indexed": false});
+    return;
   }
 };
