@@ -37,7 +37,7 @@ exports.indexPictureMetadata = async (req, res) => {
     text: resp?.responses?.[0]?.fullTextAnnotation?.text,
     colors: resp?.responses?.[0]?.imagePropertiesAnnotation?.dominantColors?.colors?.map(col => col?.color), 
     labels: resp?.responses?.[0]?.labelAnnotations?.map(lbl => lbl?.description),
-    objects:resp?.responses?.[0]?.localizedObjectAnnotations?.map(obj => obj?.name),
+    objects: resp?.responses?.[0]?.localizedObjectAnnotations?.map(obj => obj?.name),
     landmark: {
       name: resp?.responses?.[0]?.landmarkAnnotations?.[0]?.description,
       location: {

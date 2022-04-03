@@ -64,53 +64,37 @@ app.get('/api/pictures', async (req, res) => {
 
     const query = req.query.q;
     console.log(`Query string: ${query}`);
-    if (!!query) {
-        // search query available -> query from ElasticSearch
-        console.log(`Query requested: searching through ElasticSearch — query = ${query}`);
 
-        try {
-            const result = await client.search({
-                index: 'pixxearch',
-                query: {
-                    match: { labels: query }
-                }
-            })
-            console.log("Search result", result);
+    const esQuery = !!query ?
+        // search query
+        { match: { labels: query } } :
+        // showing all pictures
+        { match_all: {} };
 
-            console.log(result.hits.hits);
-            result.hits.hits.forEach(hit => {
-                pics.push({
-                    name: hit._source.id,
-                    labels: hit._source.labels,
-                    color: hit._source.color,
-                    created: dayjs(hit._source.created).fromNow()
-                });
+
+    // search query available -> query from ElasticSearch
+    console.log("ElasticSearch query", JSON.stringify(esQuery));
+
+    try {
+        const result = await client.search({
+            index: 'pixxearch',
+            query: esQuery,
+            size: 40
+        })
+
+        console.log(`Returning ${result.hits.hits.length} results`);
+        result.hits.hits.forEach(hit => {
+            pics.push({
+                name: hit._source.id,
+                labels: hit._source.labels,
+                color: `rgb(${hit._source.colors[0].red}, ${hit._source.colors[0].green}, ${hit._source.colors[0].blue})`,
+                colors: hit._source.color,
+                created: dayjs(hit._source.created).fromNow()
             });
-        } catch(e) {
-            console.log(e);
-            console.error(e);
-        }
-    } else {
-        // no search query -> return results from Firestore
-        console.log("No query: searching through Firestore");
-        const pictureStore = new Firestore().collection('pictures');
-        const snapshot = await pictureStore
-            .where('thumbnail', '==', true)
-            .orderBy('created', 'desc').get();
-    
-        if (snapshot.empty) {
-            console.log('No pictures found');
-        } else {
-            snapshot.forEach(doc => {
-                const pic = doc.data();
-                pics.push({
-                    name: doc.id,
-                    labels: pic.labels,
-                    color: pic.color,
-                    created: dayjs(pic.created.toDate()).fromNow()
-                });
-            });
-        }
+        });
+    } catch(e) {
+        console.log(e);
+        console.error(e);
     }
 
     res.send(pics);
