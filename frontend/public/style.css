@@ -27,7 +27,7 @@
 }
 
 #picture-grid > * {
-    margin: 20px;
-    flex: 1 1 400px;
-    max-width: 400px;
+    margin: 5px;
+    flex: 1 1 450px;
+    max-width: 320px;
 }
