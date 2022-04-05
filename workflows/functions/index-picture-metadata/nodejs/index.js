@@ -31,7 +31,7 @@ exports.indexPictureMetadata = async (req, res) => {
   console.log("Indexing picture metadata", JSON.stringify(resp));
 
   const doc =  {
-    id: req.query.id,
+    name: req.query.id,
     safe: true,
     created: new Date().toISOString(),
     text: resp?.responses?.[0]?.fullTextAnnotation?.text,
@@ -53,6 +53,7 @@ exports.indexPictureMetadata = async (req, res) => {
   try {
     const outcome = await client.index({
       index: 'pixxearch',
+      id: Buffer.from(req.query.id).toString("base64"),
       document: doc
     })
     console.log("Index outcome", outcome);

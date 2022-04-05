@@ -85,7 +85,7 @@ app.get('/api/pictures', async (req, res) => {
         console.log(`Returning ${result.hits.hits.length} results`);
         result.hits.hits.forEach(hit => {
             pics.push({
-                name: hit._source.id,
+                name: hit._source.name,
                 labels: hit._source.labels,
                 color: `rgb(${hit._source.colors[0].red}, ${hit._source.colors[0].green}, ${hit._source.colors[0].blue})`,
                 colors: hit._source.color,
