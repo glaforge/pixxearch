@@ -16,4 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // set the focus to the search field, if present
+    document.getElementById("queryInput")?.focus();
 });

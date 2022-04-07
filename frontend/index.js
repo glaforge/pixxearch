@@ -62,33 +62,97 @@ app.get('/api/pictures', async (req, res) => {
     console.log('Retrieving list of pictures');
     const pics = [];
 
-    const query = req.query.q;
-    console.log(`Query string: ${query}`);
+    console.log("Full query", req.query);
 
-    const esQuery = !!query ?
-        // search query
-        { match: { labels: query } } :
-        // showing all pictures
-        { match_all: {} };
+    const labels = req.query.l ? (Array.isArray(req.query.l) ? [...req.query.l] : [req.query.l]) : [];
+    const objects = req.query.o ? (Array.isArray(req.query.o) ? [...req.query.o] : [req.query.o]) : [];
 
+    console.log("labels", ...(labels.map(l => { return {term: {"labels.keyword": l}}})));
+    console.log("objects", ...(objects.map(o => { return {term: {"objects.keyword": o}}})));
 
-    // search query available -> query from ElasticSearch
-    console.log("ElasticSearch query", JSON.stringify(esQuery));
+    const esQuery = {
+        index: 'pixxearch',
+        size: 40,
+        query: {
+          bool: {
+            ...(!!req.query.q ? { must: [{
+                  multi_match: {
+                    query: req.query.q,
+                    fields: [
+                    "landmark.name",
+                    "labels",
+                    "objects"
+                    ],
+                    fuzziness: "auto"
+                  }
+                }]} : 
+                {}),
+            filter: [
+/*
+              {
+                nested: {
+                  path: "colors",
+                  query: {
+                    bool: {
+                      filter: [
+                        {
+                          range: {
+                            "colors.red": {
+                              gte: 20,
+                              lte: 30
+                            }
+                          }
+                        },
+                        {
+                          range: {
+                            "colors.blue": {
+                              gte: 10,
+                              lte: 20
+                            }
+                          }
+                        },
+                        {
+                          range: {
+                            "colors.green": {
+                              gte: 20,
+                              lte: 30
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+*/
+              ...(labels.map(l => { return {term: {"labels.keyword": l}}})),
+              ...(objects.map(o => { return {term: {"objects.keyword": o}}}))
+            ]
+          }
+        },
+        sort: [
+          "_score",
+          {
+            created: {
+              order: "desc"
+            }
+          }
+        ]
+      };
+      
+    console.log("ElasticSearch query", JSON.stringify(esQuery, null, '  '));
 
     try {
-        const result = await client.search({
-            index: 'pixxearch',
-            query: esQuery,
-            size: 40
-        })
+        const result = await client.search(esQuery);
 
         console.log(`Returning ${result.hits.hits.length} results`);
         result.hits.hits.forEach(hit => {
             pics.push({
                 name: hit._source.name,
                 labels: hit._source.labels,
+                objects: [...new Set(hit._source.objects)],
                 color: `rgb(${hit._source.colors[0].red}, ${hit._source.colors[0].green}, ${hit._source.colors[0].blue})`,
-                colors: hit._source.color,
+                colors: hit._source.colors,
                 created: dayjs(hit._source.created).fromNow()
             });
         });
