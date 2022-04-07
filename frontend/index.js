@@ -79,9 +79,10 @@ app.get('/api/pictures', async (req, res) => {
                   multi_match: {
                     query: req.query.q,
                     fields: [
-                    "landmark.name",
-                    "labels",
-                    "objects"
+                        "landmark.name",
+                        "labels",
+                        "objects",
+                        "text"
                     ],
                     fuzziness: "auto"
                   }
