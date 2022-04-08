@@ -51,7 +51,7 @@ var app = new Vue({
     },
     "onSearchEnter": function() {
       this.fetchPictures();
-      window.history.pushState(this.url, null, this.url);
+      window.history.pushState(this.url, null, '?' + this.url);
     },
     "populateDataFromQuery": function(urlSearchParams) {
       this.query = urlSearchParams.get('q');
@@ -86,26 +86,26 @@ var app = new Vue({
         if (this.labels.indexOf(facetValue) < 0) {
           this.labels.push(facetValue);
           this.fetchPictures();
-          window.history.pushState(this.url, null, this.url);
+          window.history.pushState(this.url, null, '?' + this.url);
         }
       } else if (facetType === 'object') {
         if (this.objects.indexOf(facetValue) < 0) {
           this.objects.push(facetValue);
           this.fetchPictures();
-          window.history.pushState(this.url, null, this.url);
+          window.history.pushState(this.url, null, '?' + this.url);
         }
       } else { console.log(`No facet of type ${facetType}`); }
     },
     "removeFacet": function(facetType, facetValue) {
       if (facetType === 'color') {
         this.$delete(this.colors, this.colors.indexOf(facetValue));
-        window.history.pushState(this.url, null, this.url);
+        window.history.pushState(this.url, null, '?' + this.url);
       } else if (facetType === 'label') {
         this.$delete(this.labels, this.labels.indexOf(facetValue));
-        window.history.pushState(this.url, null, this.url);
+        window.history.pushState(this.url, null, '?' + this.url);
       } else if (facetType === 'object') {
         this.$delete(this.objects, this.objects.indexOf(facetValue));
-        window.history.pushState(this.url, null, this.url);
+        window.history.pushState(this.url, null, '?' + this.url);
       } else { console.log(`No facet of type ${facetType}`); }
       this.fetchPictures();
     }

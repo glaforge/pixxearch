@@ -92,44 +92,74 @@ app.get('/api/pictures', async (req, res) => {
 
     let colorsPart = [];
     if (colors.length > 0) {
-        console.log("transforming colors", colors);
         const THRESHOLD = 20;
         const c1 = colors[0];
-        colorsPart = [{
-            nested: {
-              path: "colors",
-              query: {
-                bool: {
-                  filter: [
-                    {
-                      range: {
-                        "colors.red": {
-                          gte: c1.red - THRESHOLD,
-                          lte: c1.red + THRESHOLD
-                        }
-                      }
-                    },
-                    {
-                      range: {
-                        "colors.blue": {
-                          gte: c1.blue - THRESHOLD,
-                          lte: c1.blue + THRESHOLD
-                        }
-                      }
-                    },
-                    {
-                      range: {
-                        "colors.green": {
-                          gte: c1.green - THRESHOLD,
-                          lte: c1.green + THRESHOLD
-                        }
-                      }
+        /*
+        // start working on multi-color search
+        colors.map(c => { 
+            return {
+                range: {
+                    "colors.red": {
+                        gte: c.red - THRESHOLD,
+                        lte: c.red + THRESHOLD
                     }
-                  ]
                 }
-              }
+            },
+            {
+                range: {
+                    "colors.blue": {
+                        gte: c.blue - THRESHOLD,
+                        lte: c.blue + THRESHOLD
+                    }
+                }
+            },
+            {
+                range: {
+                    "colors.green": {
+                        gte: c.green - THRESHOLD,
+                        lte: c.green + THRESHOLD
+                    }
+                }
             }
-          }];
+        });
+        */
+        colorsPart = [
+            {
+                nested: {
+                    path: "colors",
+                    query: {
+                        bool: {
+                            filter: [
+                                {
+                                    range: {
+                                        "colors.red": {
+                                            gte: c1.red - THRESHOLD,
+                                            lte: c1.red + THRESHOLD
+                                        }
+                                    }
+                                },
+                                {
+                                    range: {
+                                        "colors.blue": {
+                                            gte: c1.blue - THRESHOLD,
+                                            lte: c1.blue + THRESHOLD
+                                        }
+                                    }
+                                },
+                                {
+                                    range: {
+                                        "colors.green": {
+                                            gte: c1.green - THRESHOLD,
+                                            lte: c1.green + THRESHOLD
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ];
     }
 
     const esQuery = {
