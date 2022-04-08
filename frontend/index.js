@@ -64,70 +64,84 @@ app.get('/api/pictures', async (req, res) => {
 
     console.log("Full query", req.query);
 
+    // req.query returns either an array for multiple query params, or a string for a single query param
     const labels = req.query.l ? (Array.isArray(req.query.l) ? [...req.query.l] : [req.query.l]) : [];
     const objects = req.query.o ? (Array.isArray(req.query.o) ? [...req.query.o] : [req.query.o]) : [];
 
-    console.log("labels", ...(labels.map(l => { return {term: {"labels.keyword": l}}})));
-    console.log("objects", ...(objects.map(o => { return {term: {"objects.keyword": o}}})));
+    const colors = req.query.c ? (Array.isArray(req.query.c) ? [...req.query.c].map(c => hex2color(c)) : [hex2color(req.query.c)]) : [];
+
+    let queryPart = {};
+    if (!!req.query.q) {
+        queryPart = { 
+            must: [
+                {
+                    multi_match: {
+                        query: req.query.q,
+                        fields: [
+                            "landmark.name",
+                            "labels",
+                            "objects",
+                            "text"
+                        ],
+                        fuzziness: "auto"
+                    }
+                }
+            ]
+        };
+    }
+
+    let colorsPart = [];
+    if (colors.length > 0) {
+        console.log("transforming colors", colors);
+        const THRESHOLD = 20;
+        const c1 = colors[0];
+        colorsPart = [{
+            nested: {
+              path: "colors",
+              query: {
+                bool: {
+                  filter: [
+                    {
+                      range: {
+                        "colors.red": {
+                          gte: c1.red - THRESHOLD,
+                          lte: c1.red + THRESHOLD
+                        }
+                      }
+                    },
+                    {
+                      range: {
+                        "colors.blue": {
+                          gte: c1.blue - THRESHOLD,
+                          lte: c1.blue + THRESHOLD
+                        }
+                      }
+                    },
+                    {
+                      range: {
+                        "colors.green": {
+                          gte: c1.green - THRESHOLD,
+                          lte: c1.green + THRESHOLD
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }];
+    }
 
     const esQuery = {
         index: 'pixxearch',
         size: 40,
         query: {
           bool: {
-            ...(!!req.query.q ? { must: [{
-                  multi_match: {
-                    query: req.query.q,
-                    fields: [
-                        "landmark.name",
-                        "labels",
-                        "objects",
-                        "text"
-                    ],
-                    fuzziness: "auto"
-                  }
-                }]} : 
-                {}),
+            ...queryPart,
             filter: [
-/*
-              {
-                nested: {
-                  path: "colors",
-                  query: {
-                    bool: {
-                      filter: [
-                        {
-                          range: {
-                            "colors.red": {
-                              gte: 20,
-                              lte: 30
-                            }
-                          }
-                        },
-                        {
-                          range: {
-                            "colors.blue": {
-                              gte: 10,
-                              lte: 20
-                            }
-                          }
-                        },
-                        {
-                          range: {
-                            "colors.green": {
-                              gte: 20,
-                              lte: 30
-                            }
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              },
-*/
-              ...(labels.map(l => { return {term: {"labels.keyword": l}}})),
-              ...(objects.map(o => { return {term: {"objects.keyword": o}}}))
+                ...colorsPart,
+                ...(labels.map(l => { return {term: {"labels.keyword": l}}})),
+                ...(objects.map(o => { return {term: {"objects.keyword": o}}}))
             ]
           }
         },
@@ -164,6 +178,14 @@ app.get('/api/pictures', async (req, res) => {
 
     res.send(pics);
 });
+
+function hex2color(hexColorStr) {
+    return {
+        red: parseInt(hexColorStr.slice(1, 3), 16),
+        green: parseInt(hexColorStr.slice(3, 5), 16),
+        blue: parseInt(hexColorStr.slice(5, 7), 16)
+    }
+}
 
 app.get('/api/pictures/:name', (req, res) => {
     res.redirect(`https://storage.googleapis.com/${process.env.BUCKET_PICTURES}/${req.params.name}`);

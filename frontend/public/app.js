@@ -80,7 +80,7 @@ var app = new Vue({
         if (this.colors.find(c => c.bgColor === newColor.bgColor) === undefined) {
           this.colors.push(newColor);
           this.fetchPictures();
-          window.history.pushState(this.url, null, this.url);
+          window.history.pushState(this.url, null, '?' + this.url);
         }
       } else if (facetType === 'label') {
         if (this.labels.indexOf(facetValue) < 0) {
