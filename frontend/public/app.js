@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+const PICS_PER_PAGE = 20;
+
 var app = new Vue({
   el: '#app',
   data() {
@@ -20,7 +22,9 @@ var app = new Vue({
       query: undefined,
       colors: [],
       labels: [],
-      objects: []
+      objects: [],
+      total: 0,
+      from: 0
     }
   },
   computed: {
@@ -30,6 +34,7 @@ var app = new Vue({
       this.colors.forEach(c => { searchParams.append('c', c.bgColor); });
       this.labels.forEach(l => { searchParams.append('l', l); });
       this.objects.forEach(o => { searchParams.append('o', o); });
+      searchParams.append('from', this.from);
 
       return searchParams.toString();
     }
@@ -40,16 +45,36 @@ var app = new Vue({
       this.populateDataFromQuery(urlSearchParam);
     }
     this.fetchPictures();
+
+    // add infinite scroll listener
+    window.addEventListener('scroll', e => {
+      let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight >= document.documentElement.offsetHeight - 1;
+      if (bottomOfWindow) {
+        if (this.pictures.length < this.total) {
+          this.from += PICS_PER_PAGE;
+          this.fetchPictures();
+        }
+      }
+    });
   },
   methods: {
     "fetchPictures": function() {
       console.log("Fetch query", this.url);
       axios
         .get('/api/pictures?' + this.url)
-        .then(response => { this.pictures = response.data })
+        .then(response => { 
+          if (this.from === 0) {
+            this.pictures = response.data.pictures;
+          } else {
+            this.pictures.push(...response.data.pictures);
+          }
+          this.total = response.data.total;
+          this.from = response.data.from;
+        })
         .catch(e => console.log("Error from Vue calling API:", e))
     },
     "onSearchEnter": function() {
+      this.from = 0;
       this.fetchPictures();
       window.history.pushState(this.url, null, '?' + this.url);
     },
@@ -78,18 +103,21 @@ var app = new Vue({
       if (facetType === 'color') {
         const newColor = this.newColor(facetValue.red, facetValue.green, facetValue.blue);
         if (this.colors.find(c => c.bgColor === newColor.bgColor) === undefined) {
+          this.from = 0;
           this.colors.push(newColor);
           this.fetchPictures();
           window.history.pushState(this.url, null, '?' + this.url);
         }
       } else if (facetType === 'label') {
         if (this.labels.indexOf(facetValue) < 0) {
+          this.from = 0;
           this.labels.push(facetValue);
           this.fetchPictures();
           window.history.pushState(this.url, null, '?' + this.url);
         }
       } else if (facetType === 'object') {
         if (this.objects.indexOf(facetValue) < 0) {
+          this.from = 0;
           this.objects.push(facetValue);
           this.fetchPictures();
           window.history.pushState(this.url, null, '?' + this.url);
@@ -98,12 +126,15 @@ var app = new Vue({
     },
     "removeFacet": function(facetType, facetValue) {
       if (facetType === 'color') {
+        this.from = 0;
         this.$delete(this.colors, this.colors.indexOf(facetValue));
         window.history.pushState(this.url, null, '?' + this.url);
       } else if (facetType === 'label') {
+        this.from = 0;
         this.$delete(this.labels, this.labels.indexOf(facetValue));
         window.history.pushState(this.url, null, '?' + this.url);
       } else if (facetType === 'object') {
+        this.from = 0;
         this.$delete(this.objects, this.objects.indexOf(facetValue));
         window.history.pushState(this.url, null, '?' + this.url);
       } else { console.log(`No facet of type ${facetType}`); }

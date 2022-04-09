@@ -64,6 +64,9 @@ app.get('/api/pictures', async (req, res) => {
 
     console.log("Full query", req.query);
 
+    const FROM = parseInt(req.query.from) || 0;
+    const THRESHOLD = 20;
+
     // req.query returns either an array for multiple query params, or a string for a single query param
     const labels = req.query.l ? (Array.isArray(req.query.l) ? [...req.query.l] : [req.query.l]) : [];
     const objects = req.query.o ? (Array.isArray(req.query.o) ? [...req.query.o] : [req.query.o]) : [];
@@ -92,7 +95,6 @@ app.get('/api/pictures', async (req, res) => {
 
     let colorsPart = [];
     if (colors.length > 0) {
-        const THRESHOLD = 20;
         const c1 = colors[0];
         /*
         // start working on multi-color search
@@ -162,9 +164,12 @@ app.get('/api/pictures', async (req, res) => {
         ];
     }
 
+    const PICS_PER_PAGE = 20;
+
     const esQuery = {
         index: 'pixxearch',
-        size: 40,
+        size: PICS_PER_PAGE,
+        from: FROM,
         query: {
           bool: {
             ...queryPart,
@@ -201,12 +206,23 @@ app.get('/api/pictures', async (req, res) => {
                 created: dayjs(hit._source.created).fromNow()
             });
         });
+
+        res.send({
+            total: result.hits.total.value,
+            from: FROM,
+            pictures: pics
+        });
+        return;
     } catch(e) {
         console.log(e);
         console.error(e);
-    }
 
-    res.send(pics);
+        res.send({
+            total: 0,
+            pictures: [],
+            error: e.message
+        });
+    }
 });
 
 function hex2color(hexColorStr) {
