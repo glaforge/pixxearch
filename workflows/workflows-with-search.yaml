@@ -52,6 +52,10 @@ main:
               - type: LANDMARK_DETECTION
               - type: OBJECT_LOCALIZATION
         result: imageAnalysisResponse
+    - logVisionApiResp:
+        call: sys.log
+        args:
+          text: ${imageAnalysisResponse.body}
     - transformImageAnalysisData:
         call: http.post
         args:
@@ -63,52 +67,70 @@ main:
     - checkSafety:
         switch:
           - condition: ${imageMetadata.body.safe == true}
-            next: storeMetadata
+            next: parallelSteps
         next: end
-    - storeMetadata:
-        call: http.request
-        args:
-          url: ${"https://firestore.googleapis.com/v1/projects/" + projectId + "/databases/(default)/documents/pictures/" + file + "?updateMask.fieldPaths=color&updateMask.fieldPaths=labels&updateMask.fieldPaths=created"}
-          auth:
-            type: OAuth2
-          method: PATCH
-          body:
-            name: ${"projects/" + projectId + "/databases/(default)/documents/pictures/" + file}
-            fields:
-              color:
-                stringValue: ${imageMetadata.body.color}
-              created:
-                timestampValue: ${imageMetadata.body.created}
-              labels:
-                arrayValue:
-                  values: ${imageMetadata.body.labels}
-        result: storeMetadataResponse
-    - indexPictureMetadata:
-        call: http.post
-        args:
-          url: ${urls.INDEX_PICTURE_METADATA_URL}
-          auth:
-            type: OIDC
-          query:
-            id: ${file}
-          body: ${imageAnalysisResponse.body}
-        result: indexingResponse
-    - thumbnailCall:
-        call: http.post
-        args:
-          url: ${urls.THUMBNAILS_URL}
-          auth:
-            type: OIDC
-          body:
-              gcsImageUri: ${gsUri}
-        result: thumbnailResponse
-    - collageCall:
-        call: http.get
-        args:
-          url: ${urls.COLLAGE_URL}
-          auth:
-            type: OIDC
-        result: collageResponse
+    - parallelReturnVars:
+        assign:
+          - storeMetadataResponse: {}
+          - indexingResponse: {}
+          - thumbnailResponse: {}
+          - collageResponse: {}
+    - parallelSteps:
+        parallel:
+          shared: [storeMetadataResponse, indexingResponse, thumbnailResponse, collageResponse]
+          branches:
+          - storeMetadataBranch:
+              steps:
+              - storeMetadata:
+                  call: http.request
+                  args:
+                    url: ${"https://firestore.googleapis.com/v1/projects/" + projectId + "/databases/(default)/documents/pictures/" + file + "?updateMask.fieldPaths=color&updateMask.fieldPaths=labels&updateMask.fieldPaths=created"}
+                    auth:
+                      type: OAuth2
+                    method: PATCH
+                    body:
+                      name: ${"projects/" + projectId + "/databases/(default)/documents/pictures/" + file}
+                      fields:
+                        color:
+                          stringValue: ${imageMetadata.body.color}
+                        created:
+                          timestampValue: ${imageMetadata.body.created}
+                        labels:
+                          arrayValue:
+                            values: ${imageMetadata.body.labels}
+                  result: storeMetadataResponse
+          - indexPictureMetadataBranch:
+              steps:
+              - indexPictureMetadata:
+                  call: http.post
+                  args:
+                    url: ${urls.INDEX_PICTURE_METADATA_URL}
+                    auth:
+                      type: OIDC
+                    query:
+                      id: ${file}
+                    body: ${imageAnalysisResponse.body}
+                  result: indexingResponse
+          - thumbnailCallBranch:
+              steps:                
+              - thumbnailCall:
+                  call: http.post
+                  args:
+                    url: ${urls.THUMBNAILS_URL}
+                    auth:
+                      type: OIDC
+                    body:
+                        gcsImageUri: ${gsUri}
+                  result: thumbnailResponse
+          - collageCallBranch:
+              steps:  
+              - collageCall:
+                  call: http.get
+                  args:
+                    url: ${urls.COLLAGE_URL}
+                    auth:
+                      type: OIDC
+                  result: collageResponse
     - finalizeCompleted:
         return:
           imageAnalysis: ${imageAnalysisResponse.code}
