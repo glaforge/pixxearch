@@ -47,7 +47,9 @@ app.post('/api/pictures', async (req, res) => {
     }
     console.log(`Receiving files ${JSON.stringify(req.files.pictures)}`);
 
-    req.files.pictures.forEach(async (pic) => {
+    const pics = Array.isArray(req.files.pictures) ? req.files.pictures : [req.files.pictures];
+
+    pics.forEach(async (pic) => {
         console.log('Storing file', pic.name);
         const newPicture = path.resolve('/tmp', pic.name);
         await pic.mv(newPicture);
