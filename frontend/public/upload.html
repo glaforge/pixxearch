@@ -100,7 +100,7 @@
 	fileInput.onchange = () => {
 	  if (fileInput.files.length > 0) {
 	    const fileName = document.querySelector('#file-js-example .file-name');
-	    fileName.textContent = fileInput.files[0].name;
+	    fileName.textContent = [...fileInput.files].map(f => f.name).join(', ');
 	  }
 	}
 	</script>
