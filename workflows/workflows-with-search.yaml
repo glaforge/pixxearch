@@ -67,17 +67,25 @@ main:
     - checkSafety:
         switch:
           - condition: ${imageMetadata.body.safe == true}
-            next: parallelSteps
+            next: thumbnailCall
         next: end
+    - thumbnailCall:
+        call: http.post
+        args:
+          url: ${urls.THUMBNAILS_URL}
+          auth:
+            type: OIDC
+          body:
+              gcsImageUri: ${gsUri}
+        result: thumbnailResponse
     - parallelReturnVars:
         assign:
           - storeMetadataResponse: {}
           - indexingResponse: {}
-          - thumbnailResponse: {}
           - collageResponse: {}
     - parallelSteps:
         parallel:
-          shared: [storeMetadataResponse, indexingResponse, thumbnailResponse, collageResponse]
+          shared: [storeMetadataResponse, indexingResponse, collageResponse]
           branches:
           - storeMetadataBranch:
               steps:
@@ -111,17 +119,6 @@ main:
                       id: ${file}
                     body: ${imageAnalysisResponse.body}
                   result: indexingResponse
-          - thumbnailCallBranch:
-              steps:                
-              - thumbnailCall:
-                  call: http.post
-                  args:
-                    url: ${urls.THUMBNAILS_URL}
-                    auth:
-                      type: OIDC
-                    body:
-                        gcsImageUri: ${gsUri}
-                  result: thumbnailResponse
           - collageCallBranch:
               steps:  
               - collageCall:
