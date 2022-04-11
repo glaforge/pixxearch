@@ -48,7 +48,7 @@ var app = new Vue({
 
     // add infinite scroll listener
     window.addEventListener('scroll', e => {
-      let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight >= document.documentElement.offsetHeight - 1;
+      let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight >= document.documentElement.offsetHeight - 2;
       if (bottomOfWindow) {
         if (this.pictures.length < this.total) {
           this.from += PICS_PER_PAGE;
