@@ -204,7 +204,7 @@ app.get('/api/pictures', async (req, res) => {
                 name: hit._source.name,
                 labels: hit._source.labels,
                 objects: [...new Set(hit._source.objects)],
-                color: `rgb(${hit._source.colors[0].red}, ${hit._source.colors[0].green}, ${hit._source.colors[0].blue})`,
+                color: `rgb(${hit._source.colors[0].red || 0}, ${hit._source.colors[0].green || 0}, ${hit._source.colors[0].blue || 0})`,
                 colors: hit._source.colors,
                 created: dayjs(hit._source.created).fromNow()
             });

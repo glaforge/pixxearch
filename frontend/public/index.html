@@ -131,9 +131,9 @@
 							<div class="tags has-addons">
 								<span class="tag has-icons-left has-text-black is-clickable" 
 									v-for="color in pic.colors" 
-									:style="'background-color: rgb(' + color.red + ', ' + color.green + ', ' + color.blue +')'"
+									:style="'background-color: rgb(' + (color.red || 0) + ', ' + (color.green || 0) + ', ' + (color.blue || 0) +')'"
 									@click="addFacet('color', color)">
-									&nbsp;&nbsp;
+									&nbsp;&nbsp;{{color.bgColor}}
 								</span>						
 							</div>
 

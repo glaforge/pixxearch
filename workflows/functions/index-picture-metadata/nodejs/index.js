@@ -35,7 +35,11 @@ exports.indexPictureMetadata = async (req, res) => {
     safe: true,
     created: new Date().toISOString(),
     text: resp?.responses?.[0]?.fullTextAnnotation?.text,
-    colors: resp?.responses?.[0]?.imagePropertiesAnnotation?.dominantColors?.colors?.map(col => col?.color), 
+    colors: resp?.responses?.[0]?.imagePropertiesAnnotation?.dominantColors?.colors?.map(col => { return {
+      red: col?.color?.red || 0,
+      green: col?.color?.green || 0,
+      blue: col?.color?.blue || 0,
+    }}), 
     labels: resp?.responses?.[0]?.labelAnnotations?.map(lbl => lbl?.description),
     objects: resp?.responses?.[0]?.localizedObjectAnnotations?.map(obj => obj?.name),
     landmark: {

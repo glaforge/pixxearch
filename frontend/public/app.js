@@ -93,9 +93,9 @@ var app = new Vue({
     "newColor": function(r, g, b) {
       return {
         red: r, green: g, blue: b, 
-        bgColor: '#' +  r.toString(16).padStart(2, '0') + 
-                        g.toString(16).padStart(2, '0') + 
-                        b.toString(16).padStart(2, '0'),
+        bgColor: '#' +  (r?.toString(16).padStart(2, '0') || '00') + 
+                        (g?.toString(16).padStart(2, '0') || '00') + 
+                        (b?.toString(16).padStart(2, '0') || '00'),
         textColor: (r + g + b) > 384 ? 'has-text-black' : 'has-text-white'
       }
     },
